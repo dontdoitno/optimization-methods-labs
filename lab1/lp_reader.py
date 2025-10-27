@@ -27,10 +27,16 @@ def read_lp_file(filename: str) -> LinearProblem:
 
     for part in objective_str.replace('-', '+-').split('+'):
         part = part.strip()
-        if not part:
+        if not part or not part.strip():
             continue
-        coeff = part.split('x')[0]
-        obj_coeffs.append(float(coeff))
+        if 'x' in part:
+            parts = part.split('x')
+            coeff = float(parts[0])
+            var_index = int(parts[1]) - 1  # x1 -> index 0, x2 -> index 1, etc.
+            # расширяем obj_coeffs до нужного размера
+            while len(obj_coeffs) <= var_index:
+                obj_coeffs.append(0.0)
+            obj_coeffs[var_index] = coeff
 
     # ограничения
     constraints, rhs, signs = [], [], []
@@ -50,12 +56,28 @@ def read_lp_file(filename: str) -> LinearProblem:
 
         row = []
         for part in left.replace('-', '+-').split('+'):
-            part.split()
-            if not part:
+            part = part.strip()
+            if not part or not part.strip():
                 continue
-            coeff = part.split('x')[0]
-            row.append(float(coeff))
+            if 'x' in part:
+                parts = part.split('x')
+                coeff = float(parts[0])
+                var_index = int(parts[1]) - 1  # x1 -> index 0, x2 -> index 1, etc.
+                # расширяем row до нужного размера
+                while len(row) <= var_index:
+                    row.append(0.0)
+                row[var_index] = coeff
         constraints.append(row)
 
-    var_names = [f"x{i+1}" for i in range(len(constraints[0]))]
+    # Убеждаемся что все строки имеют одинаковую длину
+    max_vars = max(len(obj_coeffs), max(len(row) for row in constraints) if constraints else 0)
+    # Расширяем obj_coeffs до максимального размера
+    while len(obj_coeffs) < max_vars:
+        obj_coeffs.append(0.0)
+    # Расширяем каждую строку constraints до максимального размера
+    for row in constraints:
+        while len(row) < max_vars:
+            row.append(0.0)
+
+    var_names = [f"x{i+1}" for i in range(max_vars)]
     return LinearProblem(obj_coeffs, constraints, rhs, signs, var_names, is_max)

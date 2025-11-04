@@ -13,7 +13,9 @@ class LinearProblem:
             rhs: List[float],
             signs: List[str],
             var_names: List[str],
-            is_max: bool = True
+            is_max: bool = True,
+            var_signs: List[int] | None = None,
+            n_original_vars: int | None = None,
         ):
         '''
         :param objective: коэффициенты целевой функции
@@ -29,6 +31,11 @@ class LinearProblem:
         self.signs = signs
         self.var_names = var_names
         self.is_max = is_max
+        # var_signs: +1 если переменная неотрицательная (x >= 0), -1 если неположительная (x <= 0)
+        # Длина соответствует количеству переменных на текущем этапе
+        self.var_signs = var_signs if var_signs is not None else [1] * len(var_names)
+        # число исходных переменных до расширений (slack/artificial)
+        self.n_original_vars = n_original_vars if n_original_vars is not None else len(var_names)
 
 
 class Solution:

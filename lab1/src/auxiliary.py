@@ -1,4 +1,5 @@
-from models import LinearProblem
+from src.models import LinearProblem
+
 
 def build_auxiliary(lp: LinearProblem) -> LinearProblem:
     """
@@ -12,6 +13,7 @@ def build_auxiliary(lp: LinearProblem) -> LinearProblem:
     constraints = [row[:] for row in lp.constraints]
     rhs = lp.rhs[:]
     var_names = lp.var_names[:]
+    var_signs = lp.var_signs[:]
 
     artificial_vars = []
 
@@ -40,6 +42,7 @@ def build_auxiliary(lp: LinearProblem) -> LinearProblem:
         objective[n_vars + i] = 1
 
     var_names += artificial_vars
+    var_signs += [1] * len(artificial_vars)
 
     return LinearProblem(
         objective=objective,
@@ -47,5 +50,7 @@ def build_auxiliary(lp: LinearProblem) -> LinearProblem:
         rhs=rhs,
         signs=['='] * len(rhs),
         var_names=var_names,
-        is_max=False
+        is_max=False,
+        var_signs=var_signs,
+        n_original_vars=lp.n_original_vars,
     )

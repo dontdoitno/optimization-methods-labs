@@ -1,5 +1,6 @@
 from typing import List
-from models import LinearProblem
+import re
+from src.models import LinearProblem
 
 
 def read_lp_file(filename: str) -> LinearProblem:
@@ -38,10 +39,29 @@ def read_lp_file(filename: str) -> LinearProblem:
                 obj_coeffs.append(0.0)
             obj_coeffs[var_index] = coeff
 
+    # читаем строку с признаками знаков переменных, если присутствует
+    var_signs: List[int] = []  # +1 для x>=0, -1 для x<=0
+    start_idx = 2
+    if len(lines) > 2:
+        bounds_line = lines[2]
+        # ищем шаблоны вида "x1 > 0", "x2 < 0"
+        bounds_patterns = re.findall(r"x(\d+)\s*([<>]=?)\s*0", bounds_line)
+        if bounds_patterns:
+            # определяем максимальный индекс переменной
+            max_index = 0
+            for idx_str, _ in bounds_patterns:
+                max_index = max(max_index, int(idx_str))
+            var_signs = [1] * max(max_index, len(obj_coeffs))
+            for idx_str, op in bounds_patterns:
+                i = int(idx_str) - 1
+                # >0 или >=0 => +1, <0 или <=0 => -1
+                var_signs[i] = 1 if '>' in op else -1
+            start_idx = 3
+
     # ограничения
     constraints, rhs, signs = [], [], []
 
-    for line in lines[2:]:
+    for line in lines[start_idx:]:
         if any(sign in line for sign in ['<=', '>=', '=']):
             if '<=' in line:
                 sign = '<='
@@ -80,4 +100,20 @@ def read_lp_file(filename: str) -> LinearProblem:
             row.append(0.0)
 
     var_names = [f"x{i+1}" for i in range(max_vars)]
-    return LinearProblem(obj_coeffs, constraints, rhs, signs, var_names, is_max)
+    # приведение длины var_signs к количеству переменных
+    if not var_signs:
+        var_signs = [1] * max_vars
+    else:
+        if len(var_signs) < max_vars:
+            var_signs += [1] * (max_vars - len(var_signs))
+
+    return LinearProblem(
+        obj_coeffs,
+        constraints,
+        rhs,
+        signs,
+        var_names,
+        is_max,
+        var_signs=var_signs,
+        n_original_vars=max_vars,
+    )

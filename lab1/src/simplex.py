@@ -1,7 +1,5 @@
-# simplex.py
-
 import numpy as np
-from models import LinearProblem, Solution
+from src.models import LinearProblem, Solution
 
 def solve_simplex(lp: LinearProblem):
     # Симплекс-метод только для задач максимизации в каноническом виде!
